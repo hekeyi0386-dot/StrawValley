@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pixel Farm Planner Demo</title>
+  <style>
+    :root {
+      --sky-1: #8fc8ff;
+      --sky-2: #dff3ff;
+      --grass-1: #6ea749;
+      --grass-2: #89bf5d;
+      --soil: #8d5b35;
+      --wood: #9e6a3d;
+      --wood-dark: #6a4325;
+      --panel: #f8e4b0;
+      --panel-2: #efc97a;
+      --panel-3: #fff4d5;
+      --border-dark: #4b2f1b;
+      --border-mid: #8f5a2a;
+      --text: #2d1b11;
+      --muted: #6b4f33;
+      --leaf: #477832;
+      --leaf-dark: #2f5421;
+      --gold: #f4c34d;
+      --danger: #c34b3e;
+      --danger-dark: #7d241d;
+      --shadow: 6px 6px 0 rgba(45, 27, 17, 0.5);
+      --inset-shadow: inset 0 -4px 0 rgba(75, 47, 27, 0.18);
+      --pixel-size: 4px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      background: #5ea0e6;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Courier New", "Monaco", "PingFang SC", monospace;
+      background:
+        linear-gradient(to bottom, transparent 0 68%, rgba(67, 113, 39, 0.35) 68% 100%),
+        linear-gradient(to bottom, var(--sky-2), var(--sky-1) 55%, #77b95e 55%, #5f943e 100%);
+      color: var(--text);
+      image-rendering: pixelated;
+      min-height: 100vh;
+      position: relative;
+      letter-spacing: 0.02em;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.22;
+      background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.18) 50%, transparent 50%),
+        linear-gradient(rgba(255, 255, 255, 0.16) 50%, transparent 50%);
+      background-size: 8px 8px;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 150px;
+      pointer-events: none;
+      background:
+        repeating-linear-gradient(
+          90deg,
+          #5d8a39 0 24px,
+          #6b9b42 24px 48px,
+          #7cab4f 48px 72px,
+          #67963e 72px 96px
+        );
+      border-top: var(--pixel-size) solid var(--border-dark);
+    }
+
+    .app {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 24px 24px 170px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero {
+      background:
+        linear-gradient(180deg, #b97a42 0 14px, #9a6437 14px 100%),
+        var(--wood);
+      border: var(--pixel-size) solid var(--border-dark);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    .hero h1 {
+      margin: 0 0 8px 0;
+      font-size: 28px;
+      line-height: 1.35;
+      color: #fff7db;
+      text-transform: uppercase;
+      text-shadow: 2px 2px 0 var(--border-dark);
+    }
+
+    .hero p {
+      margin: 0;
+      color: #fff0cb;
+      line-height: 1.85;
+      font-size: 14px;
+      max-width: 980px;
+    }
+
+    .hero::after {
+      content: "DAY PLAN";
+      position: absolute;
+      top: -14px;
+      right: 20px;
+      padding: 6px 10px;
+      background: var(--gold);
+      color: var(--border-dark);
+      border: var(--pixel-size) solid var(--border-dark);
+      box-shadow: 4px 4px 0 rgba(45, 27, 17, 0.35);
+      font-size: 12px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .left-col,
+    .right-col {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      height: 100%;
+    }
+
+    .right-col > .card {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 100%;
+    }
+
+    .right-col > .card .card-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card {
+      background: var(--panel);
+      border: var(--pixel-size) solid var(--border-dark);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      box-shadow: var(--inset-shadow);
+    }
+
+    .card-header {
+      background:
+        linear-gradient(180deg, #ffe7a8 0 6px, var(--panel-2) 6px 100%);
+      border-bottom: var(--pixel-size) solid var(--border-dark);
+      padding: 12px 16px;
+      font-weight: 700;
+      font-size: 15px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .card-body {
+      padding: 16px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: var(--pixel-size) solid var(--border-mid);
+      background: var(--panel-3);
+      padding: 10px 12px;
+      font-size: 14px;
+      color: var(--text);
+      outline: none;
+      transition: 0.08s steps(2, end);
+      box-shadow: inset 0 -3px 0 rgba(75, 47, 27, 0.15);
+      border-radius: 0;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 96px;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--leaf-dark);
+      box-shadow:
+        inset 0 -3px 0 rgba(75, 47, 27, 0.15),
+        0 0 0 4px rgba(111, 175, 82, 0.25);
+    }
+
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #f6d997;
+      border: var(--pixel-size) solid var(--border-dark);
+      padding: 8px 12px;
+      cursor: pointer;
+      user-select: none;
+      font-size: 13px;
+      color: var(--text);
+      box-shadow: 4px 4px 0 rgba(45, 27, 17, 0.2);
+      min-height: 44px;
+    }
+
+    .pill input {
+      width: auto;
+      margin: 0;
+      accent-color: var(--leaf);
+    }
+
+    .inventory-table {
+      display: grid;
+      gap: 10px;
+    }
+
+    .inventory-row {
+      display: grid;
+      grid-template-columns: 1.4fr 0.9fr;
+      gap: 10px;
+    }
+
+    .section-note {
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.8;
+      padding: 10px;
+      background: rgba(255, 244, 213, 0.7);
+      border: 3px solid #d2aa63;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
+
+    button {
+      border: var(--pixel-size) solid var(--border-dark);
+      padding: 12px 18px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.08s steps(2, end), box-shadow 0.08s steps(2, end);
+      font-family: inherit;
+      text-transform: uppercase;
+      box-shadow: 5px 5px 0 rgba(45, 27, 17, 0.35);
+      border-radius: 0;
+    }
+
+    button:hover {
+      transform: translate(-1px, -1px);
+      box-shadow: 6px 6px 0 rgba(45, 27, 17, 0.35);
+    }
+
+    button:active {
+      transform: translate(2px, 2px);
+      box-shadow: 2px 2px 0 rgba(45, 27, 17, 0.35);
+    }
+
+    .primary-btn {
+      background: linear-gradient(180deg, #86c45e 0 4px, var(--grass-2) 4px 100%);
+      color: #17310d;
+    }
+
+    .primary-btn:hover {
+      background: linear-gradient(180deg, #92d16a 0 4px, #7db853 4px 100%);
+    }
+
+    .secondary-btn {
+      background: linear-gradient(180deg, #ffd989 0 4px, #efbb52 4px 100%);
+      color: var(--text);
+    }
+
+    .secondary-btn:hover {
+      background: linear-gradient(180deg, #ffe298 0 4px, #f4c35e 4px 100%);
+    }
+
+    .result-block {
+      border: var(--pixel-size) solid var(--border-mid);
+      background: #fff5d7;
+      padding: 14px;
+      margin-bottom: 12px;
+      box-shadow: inset 0 -3px 0 rgba(75, 47, 27, 0.15);
+    }
+
+    .result-title {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--muted);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .result-text {
+      line-height: 1.9;
+      font-size: 14px;
+    }
+
+    .result-list {
+      margin: 0;
+      padding-left: 20px;
+      line-height: 1.9;
+      font-size: 14px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 10px;
+      font-weight: 700;
+      font-size: 12px;
+      border: 3px solid transparent;
+      border-radius: 0;
+      box-shadow: 4px 4px 0 rgba(45, 27, 17, 0.2);
+    }
+
+    .badge.low {
+      background: #daf0a4;
+      color: #304915;
+      border-color: #5b7b2d;
+    }
+
+    .badge.medium {
+      background: #ffe79a;
+      color: #6f4e0e;
+      border-color: #ad7d1e;
+    }
+
+    .badge.high {
+      background: #f9b0a7;
+      color: #6e1810;
+      border-color: var(--danger-dark);
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .loading {
+      color: var(--leaf-dark);
+      font-weight: 700;
+    }
+
+    .error {
+      color: var(--danger);
+      font-weight: 700;
+      line-height: 1.7;
+      background: #ffe1d7;
+      border: var(--pixel-size) solid var(--danger-dark);
+      padding: 12px;
+    }
+
+    .empty-state {
+      border: var(--pixel-size) solid var(--border-mid);
+      background: #fff5d7;
+      padding: 16px;
+      box-shadow: inset 0 -3px 0 rgba(75, 47, 27, 0.15);
+      line-height: 1.9;
+      color: var(--muted);
+    }
+
+    .empty-state-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .mini-toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .mini-btn {
+      background: linear-gradient(180deg, #f9df95 0 4px, #efc163 4px 100%);
+      border: var(--pixel-size) solid var(--border-dark);
+      color: var(--text);
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .footer-tip {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 12px;
+      line-height: 1.8;
+      padding: 12px;
+      background: #fff2cf;
+      border: 3px solid #d4a14f;
+    }
+
+    code {
+      font-family: inherit;
+      background: #f4d68d;
+      border: 2px solid var(--border-mid);
+      padding: 2px 6px;
+    }
+
+    @media (max-width: 1100px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .grid-2,
+      .grid-3 {
+        grid-template-columns: 1fr;
+      }
+
+      .hero h1 {
+        font-size: 22px;
+      }
+
+      .app {
+        padding: 14px 14px 170px;
+      }
+
+      .hero::after {
+        position: static;
+        display: inline-block;
+        margin-top: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section class="hero">
+      <h1>Stardew Valley AI Planner</h1>
+      <p>
+        填写当前农场状态，AI Planner会结合您的个性化目标，生成今日行动路线、资源卖留建议、建造优先级和未来3天发展重点。
+      </p>
+    </section>
+
+    <div class="layout">
+      <div class="left-col">
+        <div class="card">
+          <div class="card-header">玩家基础状态</div>
+          <div class="card-body">
+            <div class="grid-3">
+              <div>
+                <label for="season">季节</label>
+                <select id="season">
+                  <option value="spring">春</option>
+                  <option value="summer">夏</option>
+                  <option value="fall">秋</option>
+                  <option value="winter">冬</option>
+                </select>
+              </div>
+              <div>
+                <label for="day">日期</label>
+                <input id="day" type="number" value="12" min="1" max="28" />
+              </div>
+              <div>
+                <label for="weather">天气</label>
+                <select id="weather">
+                  <option value="sunny">晴天</option>
+                  <option value="rainy">下雨</option>
+                  <option value="windy">多风</option>
+                  <option value="festival">节日</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid-2" style="margin-top: 14px;">
+              <div>
+                <label for="gold">金币</label>
+                <input id="gold" type="number" value="1200" min="0" />
+              </div>
+              <div>
+                <label for="energy">体力（0-100）</label>
+                <input id="energy" type="number" value="78" min="0" max="100" />
+              </div>
+            </div>
+
+            <div class="grid-2" style="margin-top: 14px;">
+              <div>
+                <label for="level_farming">耕种等级</label>
+                <input id="level_farming" type="number" value="2" min="0" max="10" />
+              </div>
+              <div>
+                <label for="level_mining">采矿等级</label>
+                <input id="level_mining" type="number" value="1" min="0" max="10" />
+              </div>
+              <div>
+                <label for="level_foraging">觅食等级</label>
+                <input id="level_foraging" type="number" value="2" min="0" max="10" />
+              </div>
+              <div>
+                <label for="level_fishing">钓鱼等级</label>
+                <input id="level_fishing" type="number" value="0" min="0" max="10" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">建造与进度</div>
+          <div class="card-body">
+            <div class="grid-2">
+              <div>
+                <label for="house_level">房屋等级</label>
+                <input id="house_level" type="number" value="1" min="1" max="3" />
+              </div>
+              <div>
+                <label for="furnace_count">熔炉数量</label>
+                <input id="furnace_count" type="number" value="1" min="0" />
+              </div>
+              <div>
+                <label for="chest_count">箱子数量</label>
+                <input id="chest_count" type="number" value="2" min="0" />
+              </div>
+              <div>
+                <label for="tool_level">主要工具平均等级</label>
+                <select id="tool_level">
+                  <option value="basic">基础</option>
+                  <option value="copper">铜</option>
+                  <option value="steel">铁</option>
+                  <option value="gold">金</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="margin-top: 16px;">
+              <label>已建造建筑</label>
+              <div class="checkbox-group">
+                <label class="pill"><input type="checkbox" id="coop_built" /> 鸡舍 Coop</label>
+                <label class="pill"><input type="checkbox" id="barn_built" /> 畜棚 Barn</label>
+                <label class="pill"><input type="checkbox" id="silo_built" /> 筒仓 Silo</label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">库存与作物</div>
+          <div class="card-body">
+            <div class="inventory-table">
+              <div class="inventory-row">
+                <div>
+                  <label for="wood">木头</label>
+                  <input id="wood" type="number" value="120" min="0" />
+                </div>
+                <div>
+                  <label for="stone">石头</label>
+                  <input id="stone" type="number" value="65" min="0" />
+                </div>
+              </div>
+
+              <div class="inventory-row">
+                <div>
+                  <label for="fiber">纤维</label>
+                  <input id="fiber" type="number" value="23" min="0" />
+                </div>
+                <div>
+                  <label for="clay">黏土</label>
+                  <input id="clay" type="number" value="6" min="0" />
+                </div>
+              </div>
+
+              <div class="inventory-row">
+                <div>
+                  <label for="copper_ore">铜矿</label>
+                  <input id="copper_ore" type="number" value="14" min="0" />
+                </div>
+                <div>
+                  <label for="coal">煤炭</label>
+                  <input id="coal" type="number" value="5" min="0" />
+                </div>
+              </div>
+
+              <div class="inventory-row">
+                <div>
+                  <label for="copper_bar">铜锭</label>
+                  <input id="copper_bar" type="number" value="0" min="0" />
+                </div>
+                <div>
+                  <label for="food_count">可恢复体力食物数量</label>
+                  <input id="food_count" type="number" value="2" min="0" />
+                </div>
+              </div>
+            </div>
+
+            <div class="grid-3" style="margin-top: 18px;">
+              <div>
+                <label for="crop_name">当前主作物</label>
+                <input id="crop_name" value="parsnip" />
+              </div>
+              <div>
+                <label for="crop_count">主作物数量</label>
+                <input id="crop_count" type="number" value="20" min="0" />
+              </div>
+              <div>
+                <label for="crop_days_to_harvest">距收获天数</label>
+                <input id="crop_days_to_harvest" type="number" value="1" min="0" />
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">目标与自然语言意图</div>
+          <div class="card-body">
+            <label>今日目标偏好</label>
+            <div class="checkbox-group">
+              <label class="pill"><input type="checkbox" class="goal" value="maximize_profit" checked /> 效益最大化</label>
+              <label class="pill"><input type="checkbox" class="goal" value="upgrade_fast" checked /> 尽快升级</label>
+              <label class="pill"><input type="checkbox" class="goal" value="prepare_buildings" checked /> 尽快建造</label>
+              <label class="pill"><input type="checkbox" class="goal" value="save_energy" /> 节省体力</label>
+              <label class="pill"><input type="checkbox" class="goal" value="stable_beginner_path" /> 稳健新手路线</label>
+            </div>
+
+            <div style="margin-top: 16px;">
+              <label for="user_intent">玩家自然语言</label>
+              <textarea id="user_intent">我是新玩家，我想尽快升级和建造，同时尽量提高收益。今天最应该做什么？</textarea>
+            </div>
+
+            <div class="mini-toolbar">
+              <button type="button" class="mini-btn" onclick="fillExample('profit')">示例：赚钱优先</button>
+              <button type="button" class="mini-btn" onclick="fillExample('build')">示例：鸡舍优先</button>
+              <button type="button" class="mini-btn" onclick="fillExample('mine')">示例：采矿准备</button>
+            </div>
+
+            <div class="button-row">
+              <button class="primary-btn" onclick="submitPlan()">Generate My Day Plan</button>
+              <button class="secondary-btn" onclick="resetDemo()">重置默认值</button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="right-col">
+        <div class="card">
+          <div class="card-header">今日指南</div>
+          <div class="card-body">
+            <div id="statusArea" class="muted">等待你生成今日计划…</div>
+
+            <div id="emptyState" class="empty-state" style="margin-top: 14px;">
+              <div class="empty-state-title">Ready To Plan</div>
+              <div>请开启今天的旅途吧：</div>
+              <div>先在左侧填好当前农场状态，然后点击 <strong>Generate My Day Plan</strong>。</div>
+            </div>
+
+            <div id="resultArea" style="display: none; margin-top: 14px;">
+              <div class="result-block">
+                <div class="result-title">Priority Summary</div>
+                <div class="result-text" id="priority_summary"></div>
+              </div>
+
+              <div class="result-block">
+                <div class="result-title">Today's Plan</div>
+                <ol class="result-list" id="today_plan"></ol>
+              </div>
+
+              <div class="result-block">
+                <div class="result-title">Build Priority</div>
+                <div class="result-text" id="build_priority"></div>
+              </div>
+
+              <div class="result-block">
+                <div class="result-title">Sell / Keep / Process</div>
+                <ul class="result-list" id="sell_keep_process"></ul>
+              </div>
+
+              <div class="result-block">
+                <div class="result-title">Next 3 Day Focus</div>
+                <ul class="result-list" id="next_3_day_focus"></ul>
+              </div>
+
+              <div class="result-block">
+                <div class="result-title">Reason</div>
+                <div class="result-text" id="reason"></div>
+              </div>
+
+              <div class="result-block">
+                <div class="result-title">Risk Warning</div>
+                <div class="result-text" id="risk_warning"></div>
+              </div>
+
+              <div class="result-block">
+                <div class="result-title">Risk Level</div>
+                <div id="risk_badge"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const defaultState = {
+      season: "spring",
+      day: 12,
+      weather: "sunny",
+      gold: 1200,
+      energy: 78,
+      level_farming: 2,
+      level_mining: 1,
+      level_foraging: 2,
+      level_fishing: 0,
+      house_level: 1,
+      furnace_count: 1,
+      chest_count: 2,
+      tool_level: "basic",
+      coop_built: false,
+      barn_built: false,
+      silo_built: false,
+      wood: 120,
+      stone: 65,
+      fiber: 23,
+      clay: 6,
+      copper_ore: 14,
+      coal: 5,
+      copper_bar: 0,
+      food_count: 2,
+      crop_name: "parsnip",
+      crop_count: 20,
+      crop_days_to_harvest: 1,
+      goals: ["maximize_profit", "upgrade_fast", "prepare_buildings"],
+      user_intent: "我是新玩家，我想尽快升级和建造，同时尽量提高收益。今天最应该做什么？"
+    };
+
+    function setValue(id, value) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (el.type === "checkbox") {
+        el.checked = Boolean(value);
+      } else {
+        el.value = value;
+      }
+    }
+
+    function resetDemo() {
+      setValue("season", defaultState.season);
+      setValue("day", defaultState.day);
+      setValue("weather", defaultState.weather);
+      setValue("gold", defaultState.gold);
+      setValue("energy", defaultState.energy);
+      setValue("level_farming", defaultState.level_farming);
+      setValue("level_mining", defaultState.level_mining);
+      setValue("level_foraging", defaultState.level_foraging);
+      setValue("level_fishing", defaultState.level_fishing);
+      setValue("house_level", defaultState.house_level);
+      setValue("furnace_count", defaultState.furnace_count);
+      setValue("chest_count", defaultState.chest_count);
+      setValue("tool_level", defaultState.tool_level);
+      setValue("coop_built", defaultState.coop_built);
+      setValue("barn_built", defaultState.barn_built);
+      setValue("silo_built", defaultState.silo_built);
+      setValue("wood", defaultState.wood);
+      setValue("stone", defaultState.stone);
+      setValue("fiber", defaultState.fiber);
+      setValue("clay", defaultState.clay);
+      setValue("copper_ore", defaultState.copper_ore);
+      setValue("coal", defaultState.coal);
+      setValue("copper_bar", defaultState.copper_bar);
+      setValue("food_count", defaultState.food_count);
+      setValue("crop_name", defaultState.crop_name);
+      setValue("crop_count", defaultState.crop_count);
+      setValue("crop_days_to_harvest", defaultState.crop_days_to_harvest);
+      setValue("user_intent", defaultState.user_intent);
+
+      document.querySelectorAll(".goal").forEach(cb => {
+        cb.checked = defaultState.goals.includes(cb.value);
+      });
+
+      updatePreview();
+      clearResult();
+    }
+
+    function fillExample(type) {
+      if (type === "profit") {
+        setValue("season", "spring");
+        setValue("day", 22);
+        setValue("gold", 800);
+        setValue("energy", 72);
+        setValue("wood", 90);
+        setValue("stone", 54);
+        setValue("copper_ore", 8);
+        setValue("coal", 3);
+        setValue("crop_name", "potato");
+        setValue("crop_count", 18);
+        setValue("crop_days_to_harvest", 2);
+        setValue("user_intent", "我是新玩家，想在春季后半段尽量提高收益，但不要做太亏的决定。");
+      }
+
+      if (type === "build") {
+        setValue("season", "spring");
+        setValue("day", 14);
+        setValue("gold", 1900);
+        setValue("energy", 80);
+        setValue("wood", 160);
+        setValue("stone", 82);
+        setValue("copper_ore", 10);
+        setValue("coal", 4);
+        setValue("crop_name", "parsnip");
+        setValue("crop_count", 12);
+        setValue("crop_days_to_harvest", 1);
+        setValue("user_intent", "我是新玩家，想尽快准备鸡舍，但也不想把前期收益拖垮。今天最该做什么？");
+      }
+
+      if (type === "mine") {
+        setValue("season", "spring");
+        setValue("day", 10);
+        setValue("gold", 950);
+        setValue("energy", 86);
+        setValue("wood", 110);
+        setValue("stone", 70);
+        setValue("copper_ore", 5);
+        setValue("coal", 1);
+        setValue("crop_name", "cauliflower");
+        setValue("crop_count", 8);
+        setValue("crop_days_to_harvest", 4);
+        setValue("user_intent", "我是新玩家，想尽快推进升级，准备后面更有效率地下矿和做工具。");
+      }
+
+      updatePreview();
+      clearResult();
+    }
+
+    function getCheckedGoals() {
+      return Array.from(document.querySelectorAll(".goal"))
+        .filter(cb => cb.checked)
+        .map(cb => cb.value);
+    }
+
+    function buildPayload() {
+      return {
+        player_profile: {
+          level_farming: Number(document.getElementById("level_farming").value),
+          level_mining: Number(document.getElementById("level_mining").value),
+          level_foraging: Number(document.getElementById("level_foraging").value),
+          level_fishing: Number(document.getElementById("level_fishing").value),
+          gold: Number(document.getElementById("gold").value),
+          energy: Number(document.getElementById("energy").value),
+          season: document.getElementById("season").value,
+          day: Number(document.getElementById("day").value),
+          weather: document.getElementById("weather").value
+        },
+        farm_progress: {
+          house_level: Number(document.getElementById("house_level").value),
+          coop_built: document.getElementById("coop_built").checked,
+          barn_built: document.getElementById("barn_built").checked,
+          silo_built: document.getElementById("silo_built").checked,
+          furnace_count: Number(document.getElementById("furnace_count").value),
+          chest_count: Number(document.getElementById("chest_count").value),
+          tool_level: document.getElementById("tool_level").value
+        },
+        inventory: [
+          { name: "wood", count: Number(document.getElementById("wood").value) },
+          { name: "stone", count: Number(document.getElementById("stone").value) },
+          { name: "fiber", count: Number(document.getElementById("fiber").value) },
+          { name: "clay", count: Number(document.getElementById("clay").value) },
+          { name: "copper_ore", count: Number(document.getElementById("copper_ore").value) },
+          { name: "coal", count: Number(document.getElementById("coal").value) },
+          { name: "copper_bar", count: Number(document.getElementById("copper_bar").value) },
+          { name: "food", count: Number(document.getElementById("food_count").value) }
+        ],
+        crops: [
+          {
+            name: document.getElementById("crop_name").value,
+            count: Number(document.getElementById("crop_count").value),
+            days_to_harvest: Number(document.getElementById("crop_days_to_harvest").value)
+          }
+        ],
+        goals: getCheckedGoals(),
+        user_intent: document.getElementById("user_intent").value.trim()
+      };
+    }
+
+    function updatePreview() {
+      const payload = buildPayload();
+      const previewEl = document.getElementById("jsonPreview");
+      if (previewEl) {
+        previewEl.value = JSON.stringify(payload, null, 2);
+      }
+    }
+
+    function clearResult() {
+      document.getElementById("statusArea").innerHTML = '<span class="muted">等待你生成今日计划…</span>';
+      document.getElementById("emptyState").style.display = "block";
+      document.getElementById("resultArea").style.display = "none";
+    }
+
+    function renderList(containerId, items) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = "";
+      (items || []).forEach(item => {
+        const li = document.createElement("li");
+        li.textContent = item;
+        container.appendChild(li);
+      });
+    }
+
+    function renderRiskBadge(risk) {
+      const wrapper = document.getElementById("risk_badge");
+      wrapper.innerHTML = "";
+      const span = document.createElement("span");
+      const val = (risk || "medium").toLowerCase();
+      span.className = `badge ${val}`;
+      span.textContent = val.toUpperCase();
+      wrapper.appendChild(span);
+    }
+
+    async function submitPlan() {
+      const payload = buildPayload();
+      updatePreview();
+
+      document.getElementById("statusArea").innerHTML = '<span class="loading">AI 正在规划今日路线…</span>';
+      document.getElementById("emptyState").style.display = "none";
+      document.getElementById("resultArea").style.display = "none";
+
+      try {
+        const res = await fetch("http://127.0.0.1:8000/plan", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`后端返回错误：${res.status} ${text}`);
+        }
+
+        const data = await res.json();
+
+        document.getElementById("priority_summary").textContent =
+          data.priority_summary || data.summary || "暂无总结";
+
+        renderList("today_plan", data.today_plan || data.day_plan || []);
+        document.getElementById("build_priority").textContent =
+          data.build_priority || "暂无建造建议";
+        renderList("sell_keep_process", data.sell_keep_process || data.inventory_advice || []);
+        renderList("next_3_day_focus", data.next_3_day_focus || []);
+        document.getElementById("reason").textContent = data.reason || "暂无解释";
+        document.getElementById("risk_warning").textContent =
+          data.risk_warning || "暂无风险提醒";
+
+        renderRiskBadge(data.risk || "medium");
+
+        document.getElementById("statusArea").innerHTML =
+          '<span class="muted">规划完成！</span>';
+        document.getElementById("emptyState").style.display = "none";
+        document.getElementById("resultArea").style.display = "block";
+      } catch (err) {
+        document.getElementById("statusArea").innerHTML =
+          `<div class="error">请求失败：${err.message}<br/>请确认后端已经运行在 http://127.0.0.1:8000，并且存在 POST /plan 接口。</div>`;
+        document.getElementById("emptyState").style.display = "none";
+        document.getElementById("resultArea").style.display = "none";
+      }
+    }
+
+    document.querySelectorAll("input, select, textarea").forEach(el => {
+      el.addEventListener("input", updatePreview);
+      el.addEventListener("change", updatePreview);
+    });
+
+    resetDemo();
+  </script>
+</body>
+</html>
